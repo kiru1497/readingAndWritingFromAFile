@@ -1,53 +1,42 @@
 const http = require("http");
-const fs = require("fs");
+const fs = require("fs"); 
 
 const server = http.createServer((req, res) => {
-  // Show form
-  if (req.url === "/" && req.method === "GET") {
-    res.writeHead(200, { "Content-Type": "text/html" });
+  
+  if (req.url === "/") {
+    res.setHeader("Content-Type", "text/html");
     res.end(`
-      <h2>Simple Form</h2>
-      <form action="/submit" method="POST">
+      <form action="/message" method="POST">
         <input type="text" name="username" placeholder="Enter name" required />
         <br><br>
-        <button type="submit">Submit</button>
+        <button type="submit">Add</button>
       </form>
     `);
   }
+  else{
+    if(req.url === '/message'){
+      res.setHeader("Content-Type", "text/html")
+      let body = []; 
+      req.on('data', (chunks)=> {
+        body.push(chunks);
+      })
 
-  // Handle form submission
-  else if (req.url === "/submit" && req.method === "POST") {
-    let body = "";
+      req.on('end',()=>{
+        let buffer=Buffer.concat(body);
+      
+        let formData = buffer.toString(); 
+        console.log(formData); 
 
-    // Collect form data
-    req.on("data", chunk => {
-      body += chunk.toString();
-    });
+        const formValues = formData.split("=")[1]; 
 
-    // When all data is received
-    req.on("end", () => {
-      // body looks like: username=Kiran
-      const username = body.split("=")[1];
+        fs.writeFile('formValue.txt',formValues, (err)=>{
 
-      // Write to file
-      fs.appendFileSync("data.txt", `Username: ${username}\n`);
-
-      // Redirect using 302
-      res.writeHead(302, { Location: "/success" });
-      res.end();
-    });
-  }
-
-  // Redirect destination
-  else if (req.url === "/success") {
-    res.writeHead(200, { "Content-Type": "text/html" });
-    res.end("<h3>Form submitted successfully</h3>");
-  }
-
-  // Fallback
-  else {
-    res.writeHead(404);
-    res.end("Page not found");
+          res.statusCode = 302; 
+          res.setHeader("location","/");
+          res.end();
+        })
+      })
+    }
   }
 });
 
